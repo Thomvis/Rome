@@ -1,6 +1,10 @@
 require 'fourflusher'
 
-CONFIGURATION = "Release"
+if ENV['COCOAPODS_ROME_CONFIG']
+  CONFIGURATION = ENV['COCOAPODS_ROME_CONFIG']
+else
+  CONFIGURATION = "Release"
+end
 PLATFORMS = { 'iphonesimulator' => 'iOS',
               'appletvsimulator' => 'tvOS',
               'watchsimulator' => 'watchOS' }
