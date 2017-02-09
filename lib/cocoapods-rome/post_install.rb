@@ -47,6 +47,7 @@ def enable_debug_information(project_path)
   project.targets.each do |target|
     config = target.build_configurations.find { |config| config.name.eql? CONFIGURATION }
     config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+    config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
   end
   project.save
 end
