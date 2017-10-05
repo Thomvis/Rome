@@ -52,16 +52,15 @@ def enable_debug_information(project_path)
   project.save
 end
 
-def copy_dsym_files(dsym_destination)
-  dsym_destination.rmtree if dsym_destination.directory?
-  platforms = ['iphoneos', 'iphonesimulator']
-  platforms.each do |platform|
-    dsym = Pathname.glob("build/#{CONFIGURATION}-#{platform}/**/*.dSYM")
-    dsym.each do |dsym|
-      destination = dsym_destination + platform
-      FileUtils.mkdir_p destination
-      FileUtils.cp_r dsym, destination, :remove_destination => true
-    end
+def generate_dsyms(sandbox)
+  destination = sandbox.root.parent + 'Rome'
+
+  Pathname.glob(destination + "*.framework").each do |framework|
+    framework_name = framework.basename(".framework")
+    binary_path = framework + framework_name
+    dsym_path = framework.sub_ext '.dSYM'
+    dsymutil_log = `dsymutil #{binary_path} -o #{dsym_path}`
+    puts dsymutil_log
   end
 end
 
@@ -118,7 +117,7 @@ Pod::HooksManager.register('cocoapods-rome', :post_install) do |installer_contex
     FileUtils.cp_r framework, destination, :remove_destination => true
   end
 
-  copy_dsym_files(sandbox_root.parent + 'dSYM')
+  generate_dsyms(sandbox)
 
   build_dir.rmtree if build_dir.directory?
 end
