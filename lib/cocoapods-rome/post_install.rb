@@ -100,9 +100,12 @@ Pod::HooksManager.register('cocoapods-rome', :post_install) do |installer_contex
   installer_context.umbrella_targets.each do |umbrella|
     umbrella.specs.each do |spec|
       consumer = spec.consumer(umbrella.platform_name)
-      file_accessor = Pod::Sandbox::FileAccessor.new(sandbox.pod_dir(spec.root.name), consumer)
-      frameworks += file_accessor.vendored_libraries
-      frameworks += file_accessor.vendored_frameworks
+      begin 
+        file_accessor = Pod::Sandbox::FileAccessor.new(sandbox.pod_dir(spec.root.name), consumer)
+        frameworks += file_accessor.vendored_libraries
+        frameworks += file_accessor.vendored_frameworks
+      rescue
+      end
     end
   end
   frameworks.uniq!
