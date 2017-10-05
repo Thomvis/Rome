@@ -1,6 +1,10 @@
 require 'fourflusher'
 
-CONFIGURATION = "Release"
+if ENV['COCOAPODS_ROME_CONFIG']
+  CONFIGURATION = ENV['COCOAPODS_ROME_CONFIG']
+else
+  CONFIGURATION = "Release"
+end
 PLATFORMS = { 'iphonesimulator' => 'iOS',
               'appletvsimulator' => 'tvOS',
               'watchsimulator' => 'watchOS' }
@@ -38,9 +42,34 @@ def xcodebuild(sandbox, target, sdk='macosx', deployment_target=nil)
   Pod::Executable.execute_command 'xcodebuild', args, true
 end
 
+def enable_debug_information(project_path)
+  project = Xcodeproj::Project.open(project_path)
+  project.targets.each do |target|
+    config = target.build_configurations.find { |config| config.name.eql? CONFIGURATION }
+    config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+    config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
+  end
+  project.save
+end
+
+def copy_dsym_files(dsym_destination)
+  dsym_destination.rmtree if dsym_destination.directory?
+  platforms = ['iphoneos', 'iphonesimulator']
+  platforms.each do |platform|
+    dsym = Pathname.glob("build/#{CONFIGURATION}-#{platform}/**/*.dSYM")
+    dsym.each do |dsym|
+      destination = dsym_destination + platform
+      FileUtils.mkdir_p destination
+      FileUtils.cp_r dsym, destination, :remove_destination => true
+    end
+  end
+end
+
 Pod::HooksManager.register('cocoapods-rome', :post_install) do |installer_context|
   sandbox_root = Pathname(installer_context.sandbox_root)
   sandbox = Pod::Sandbox.new(sandbox_root)
+
+  enable_debug_information(sandbox.project_path)
 
   build_dir = sandbox_root.parent + 'build'
   destination = sandbox_root.parent + 'Rome'
@@ -85,5 +114,8 @@ Pod::HooksManager.register('cocoapods-rome', :post_install) do |installer_contex
     FileUtils.mkdir_p destination
     FileUtils.cp_r framework, destination, :remove_destination => true
   end
+
+  copy_dsym_files(sandbox_root.parent + 'dSYM')
+
   build_dir.rmtree if build_dir.directory?
 end
