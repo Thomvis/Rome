@@ -58,7 +58,7 @@ def generate_dsyms(sandbox)
   Pathname.glob(destination + "*.framework").each do |framework|
     framework_name = framework.basename(".framework")
     binary_path = framework + framework_name
-    dsym_path = framework.sub_ext '.dSYM'
+    dsym_path = framework.sub_ext '.framework.dSYM'
     dsymutil_log = `dsymutil #{binary_path} -o #{dsym_path}`
     puts dsymutil_log
   end
@@ -119,5 +119,11 @@ Pod::HooksManager.register('cocoapods-rome', :post_install) do |installer_contex
 
   generate_dsyms(sandbox)
 
-  build_dir.rmtree if build_dir.directory?
+  # put all bcsymbolmaps inside Highstreet to ensure they end up in the build dir
+  Pathname.glob("build/*/*/*.bcsymbolmap").each do |symbolmap|
+    highstreet_framework = destination
+    FileUtils.cp symbolmap, highstreet_framework
+  end
+
+  # build_dir.rmtree if build_dir.directory?
 end
